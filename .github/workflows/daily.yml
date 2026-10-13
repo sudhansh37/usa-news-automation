@@ -29,25 +29,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
-      - name: Checkout
+      - name: 1. Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: 2. Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install system deps (ffmpeg + fonts)
+      - name: 3. Install system deps (ffmpeg + fonts)
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
 
-      - name: Install Python deps
+      - name: 4. Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate + upload videos
+      # Videos yahin banti hain. NOTE: --out output ZAROORI hai, warna
+      # download ke liye output/ folder khaali reh jata hai.
+      - name: 5. Generate + upload videos
         env:
           GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
@@ -61,18 +63,9 @@ jobs:
           UPLOAD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.upload || 'true' }}
         run: |
           COUNT="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.count || '2' }}"
-          python main.py --count "$COUNT"
+          python main.py --count "$COUNT" --out output
 
-      - name: Upload video artifacts (backup)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: videos-${{ github.run_number }}
-          path: output/*.mp4
-          if-no-files-found: ignore
-          retention-days: 5
-
-      - name: Save seen-news history
+      - name: 6. Save seen-news history
         if: always()
         run: |
           git config user.name  "usa-news-bot"
@@ -80,3 +73,27 @@ jobs:
           git add data/seen.json 2>/dev/null || true
           git commit -m "chore: update seen-news history [skip ci]" || echo "no changes"
           git push || echo "push skipped"
+
+      # Permanent download link (Releases page). Har run par 'latest-videos'
+      # tag update hota hai, isliye ek hi clean link rehta hai.
+      - name: 7. Publish videos to Release (permanent download)
+        if: always()
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-videos
+          name: "Latest US news videos"
+          body: "Auto-generated US news videos — run #${{ github.run_number }}. Neeche Assets se download karo."
+          files: output/*.mp4
+          make_latest: true
+
+      # DOWNLOAD OPTION — ye LAST step hai, isliye workflow khatam hone par hi
+      # Actions run page ke 'Artifacts' section me download button aata hai.
+      - name: 8. Upload videos as artifact (download after workflow ends)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-run-${{ github.run_number }}
+          path: output/*.mp4
+          if-no-files-found: warn
+          retention-days: 30
