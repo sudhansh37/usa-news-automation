@@ -1,0 +1,28 @@
+# ================= USA News Automation - requirements =================
+# Core
+requests
+PyYAML
+python-dotenv
+feedparser
+
+# AI (script rewrite)
+google-genai          # Gemini (primary, jab GEMINI_API_KEY ho)
+                      # Pollinations (free, key-free) fallback bhi built-in hai
+
+# Images
+Pillow                # resize/crop + overlay rendering (drawtext ki jagah)
+ddgs                  # key-free web image search (Google-jaisa)
+
+# Narration (TTS)
+edge-tts              # DEFAULT voice (Microsoft, free, no key) - GitHub Actions pe best
+gTTS                  # proxy-friendly fallback
+gradio_client         # HF Space TTS (apna space / IndicF5 / Parler) - optional
+numpy
+
+# Video editing
+imageio-ffmpeg        # bundled ffmpeg binary (system ffmpeg na ho to)
+
+# YouTube upload
+google-api-python-client
+google-auth
+google-auth-oauthlib

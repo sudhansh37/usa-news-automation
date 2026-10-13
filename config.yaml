@@ -1,0 +1,134 @@
+# ================= USA News Automation - main config =================
+# Ye bot: Google News (US) RSS -> AI rewrite (hook style) -> images -> English
+# narration -> FFmpeg edit -> YouTube upload. Sab kuch config se control hota hai.
+#
+# Secrets (.env ya GitHub Actions secrets):
+#   GEMINI_API_KEY (+ GEMINI_API_KEY_2)  -> AI rewrite (na ho to Pollinations free)
+#   STOCK_API_KEY                        -> "pixals" stock image API
+#   HF_TOKEN                             -> apna HF Space TTS (optional)
+#   YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN -> YouTube upload
+#   KHUSHI_BASE_URL                      -> apna Khushi AI server (optional)
+
+channel:
+  name: "USA News Now"          # channel branding (intro card + lower-third)
+  handle: "@usanewsnow"
+  language: "en-US"
+
+# ---------------- News source (Google News US RSS) ----------------
+news:
+  # "as it is" US news - Google News ke American feeds
+  feeds:
+    - "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"                                   # Top stories (US)
+    - "https://news.google.com/rss/headlines/section/topic/NATION?hl=en-US&gl=US&ceid=US:en"   # U.S.
+    - "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en" # Business
+  # Kitni videos per run
+  videos_per_run: 2
+  # Ek hi run me kitni khabrein uthani hain (inme se top pick hongi)
+  max_items: 25
+  # India/global mix avoid - sirf US-centric (ye words headline me ho to skip)
+  exclude_keywords: ["India", "Bollywood", "IPL", "Pakistan", "China", "Russia-Ukraine"]
+
+# ---------------- Script (AI rewrite, hook style) ----------------
+script:
+  provider: "gemini"            # "gemini" | "pollinations" (free) | "khushi" | "openai"
+  gemini:
+    model: "gemini-2.5-flash"
+    fallback_models: ["gemini-2.0-flash", "gemini-flash-latest"]
+  pollinations:
+    model: "openai"
+    base_url: "https://text.pollinations.ai/openai"
+  khushi:
+    base_url: "http://localhost:8000/v1"   # apna Khushi AI (khushi-ai repo)
+    model: "khushi"
+  # Video ki length / scenes
+  target_seconds: 65            # approx narration length
+  scenes: 7                     # kitne visual scenes (intro alag se)
+  tone: "energetic, fast-paced, engaging US news explainer"
+
+# ---------------- Images ----------------
+images:
+  width: 1920
+  height: 1080
+  # Provider order: pehle stock API ("pixals"), phir web image search,
+  # phir AI generate (Pollinations). Jo na mile wo agla try karta hai.
+  providers: ["stock", "web", "pollinations"]
+  stock:
+    # "pixals" ka apna provider - Pexels / Pixabay / custom choose karo
+    kind: "pexels"              # "pexels" | "pixabay" | "custom"
+    base_url: "https://api.pexels.com/v1/search"
+    # custom ho to: base_url + key_header + key_param + results_path bharo
+    key_header: "Authorization"
+    results_path: "photos"
+    image_field: "large"
+    per_page: 8
+  web:
+    enabled: true               # key-free web image search (ddgs)
+    max_results: 6
+  pollinations:
+    base_url: "https://image.pollinations.ai/prompt"
+    model: "flux"
+    retries: 4                  # 402/500 aaye to retry (free tier rate-limit)
+  # image ke upar thoda dark gradient (text readable rahe)
+  dim: 0.28
+
+# ---------------- Narration (TTS) ----------------
+tts:
+  # provider chain - pehla jo chale wahi use hota hai
+  providers: ["edge_tts", "gtts", "gtx", "hf_space", "custom_http"]
+  edge_tts:
+    voice: "en-US-GuyNeural"    # male news anchor. Options: en-US-AriaNeural (female),
+                                # en-US-ChristopherNeural, en-US-JennyNeural, en-US-BrianNeural
+    rate: "+10%"
+    volume: "+0%"
+  gtts:
+    lang: "en"
+    tld: "com"                  # proxy-friendly fallback
+  gemini:                        # GEMINI_API_KEY ho to (natural voice)
+    model: "gemini-2.5-flash-preview-tts"
+    voice: "Charon"
+    style: "Read as an energetic American news anchor:"
+  hf_space:                      # apna / kisi ka bhi HF Space TTS (gradio)
+    space: ""                   # e.g. "sudhansh37/khushi-tts"
+    api_name: "/predict"
+    text_param: "text"
+  custom_http:                   # apna koi bhi TTS API
+    endpoint: ""
+    auth_header: "Bearer {{TTS_API_KEY}}"
+    body: { text: "{text}", voice: "en-US", format: "mp3" }
+    response: "binary"          # "binary" | "base64_json:data"
+
+# ---------------- Video editing (FFmpeg) ----------------
+effects:
+  fps: 30
+  # Ken Burns (halka zoom/pan) - news ke liye subtle
+  variants: [zoom_in, zoom_out, pan_left, pan_right, ken_burns]
+  zoom_amount: 0.14
+  # colour grade
+  saturation: 1.18
+  contrast: 1.10
+  brightness: 0.02
+  sharpen: 0.8
+  # quality
+  crf: 18
+  preset: "medium"
+  audio_bitrate: "192k"
+  # background music (ffmpeg synth, 100% copyright-free) - narration ke neeche
+  bgm: true
+  bgm_volume: 0.10
+  # cross-fade between scenes (seconds, 0 = off)
+  xfade: 0.0
+
+# ---------------- On-screen text ----------------
+overlay:
+  headline_bar: true            # top pe news headline (red accent)
+  captions: true                # bottom pe narration captions (time-synced)
+  lower_third: true             # channel branding strip
+  intro_card: true              # pehla card: channel + headline
+
+# ---------------- YouTube upload ----------------
+youtube:
+  privacy: "public"             # public / unlisted / private
+  category_id: "25"             # 25 = News & Politics
+  made_for_kids: false
+  ai_disclosure: true           # description me "AI-generated" note
+  tags: ["us news", "breaking news", "news today", "usa news", "world news"]

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>USA News Automation — Video Workflow</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141924; --panel2:#1b2130; --line:#2a3242;
+    --ink:#e9eef7; --muted:#9aa7bd; --red:#e01e37; --yellow:#ffd400;
+    --green:#25c281; --blue:#4aa8ff; --purple:#a97bff; --orange:#ff9f43;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 70% -10%,#182034 0%,var(--bg) 60%);
+       color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+       padding:36px 22px 60px}
+  .wrap{max-width:1120px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .logo{background:var(--red);color:#fff;font-weight:800;letter-spacing:.5px;
+        padding:8px 14px;border-radius:8px;font-size:15px}
+  h1{font-size:26px;margin:0}
+  .sub{color:var(--muted);margin:2px 0 26px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .stage{position:relative;display:grid;grid-template-columns:64px 1fr;gap:16px;
+         background:linear-gradient(180deg,var(--panel),var(--panel2));
+         border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .num{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;
+       font-weight:800;font-size:20px;color:#0b0e14;background:var(--yellow)}
+  .stage h3{margin:0 0 3px;font-size:17px}
+  .stage .what{color:var(--muted);font-size:13.5px;margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:12.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);
+        background:#0f1420;color:var(--ink);white-space:nowrap}
+  .chip.p{background:#0f2a1e;border-color:#1c5a3f;color:#8ef0c4}   /* primary */
+  .chip.f{background:#2a1f0f;border-color:#5a451c;color:#ffd88a}   /* fallback */
+  .chip.k{background:#241a33;border-color:#4b3a66;color:#d7c3ff}   /* key */
+  .arrow{display:grid;place-items:center;color:var(--line);font-size:22px;margin:-4px 0}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:22px 0 8px;color:var(--muted);font-size:13px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .note{margin-top:26px;background:#0f1420;border:1px dashed var(--line);border-radius:12px;padding:16px 18px;color:var(--muted);font-size:13.5px}
+  .note b{color:var(--ink)}
+  .badge{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:2px 7px;margin-left:8px}
+  code{background:#0f1420;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px;color:#cfe3ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo">USA NEWS NOW</span>
+    <h1>Video Automation Workflow</h1>
+  </header>
+  <p class="sub">Google News (US) → AI hook-script → images → English narration → FFmpeg edit → YouTube. Har stage me <b>primary + fallback</b> chain hai, isliye ek key na ho to bhi video ban jaati hai.</p>
+
+  <div class="grid">
+
+    <div class="stage">
+      <div class="num">1</div>
+      <div>
+        <h3>News source — Google News (US) RSS <span class="badge">no key</span></h3>
+        <p class="what">Khabar "as it is" uthai jaati hai — headline, source, link, time. Koi scraping nahi.</p>
+        <div class="chips">
+          <span class="chip p">Top stories · en-US / gl=US</span>
+          <span class="chip p">NATION</span>
+          <span class="chip p">BUSINESS</span>
+          <span class="chip">exclude_keywords filter</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">2</div>
+      <div>
+        <h3>Picker + history</h3>
+        <p class="what">Duplicate avoid — jo khabar pehle video ban chuki hai wo skip. Har run me N nayi videos.</p>
+        <div class="chips"><span class="chip">data/seen.json</span><span class="chip">videos_per_run</span></div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">3</div>
+      <div>
+        <h3>AI scriptwriter — hook style</h3>
+        <p class="what">Khabar ko 60-sec script me rewrite: strong HOOK + scenes (narration + image query) + title/tags/description. STRICT JSON.</p>
+        <div class="chips">
+          <span class="chip p">Gemini 2.5 Flash (GEMINI_API_KEY)</span>
+          <span class="chip f">Pollinations free LLM</span>
+          <span class="chip f">Khushi AI (apna repo)</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">4</div>
+      <div>
+        <h3>Images — stock → web → AI generate</h3>
+        <p class="what">Pehle licensed stock photo, phir web image search, aur jo na mile wo <b>Pollinations AI</b> se generate. Sab 1920×1080 cover-crop + watermark trim.</p>
+        <div class="chips">
+          <span class="chip k">"pixals" stock API (Pexels/Pixabay/custom)</span>
+          <span class="chip">ddgs web search</span>
+          <span class="chip p">Pollinations image (flux)</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">5</div>
+      <div>
+        <h3>Narration (TTS) — scene-wise</h3>
+        <p class="what">Har scene ka alag audio → duration exact → image + caption perfect sync.</p>
+        <div class="chips">
+          <span class="chip p">edge-tts (en-US news voice)</span>
+          <span class="chip f">gTTS</span>
+          <span class="chip f">Google Translate TTS</span>
+          <span class="chip k">apna HF Space</span>
+          <span class="chip k">Gemini TTS</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">6</div>
+      <div>
+        <h3>FFmpeg editor</h3>
+        <p class="what">Ken Burns zoom/pan + colour grade + sharpen → top headline bar, time-synced captions, channel lower-third, intro card → concat → narration + copyright-free BGM mux. 1080p / 30fps.</p>
+        <div class="chips">
+          <span class="chip">zoompan</span><span class="chip">PIL overlays</span>
+          <span class="chip">loudnorm + amix</span><span class="chip">aevalsrc BGM</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="stage">
+      <div class="num">7</div>
+      <div>
+        <h3>YouTube upload</h3>
+        <p class="what">Data API v3 (OAuth refresh token) se title/description/tags ke saath upload. AI disclosure note bhi.</p>
+        <div class="chips">
+          <span class="chip k">YT_CLIENT_ID</span><span class="chip k">YT_CLIENT_SECRET</span>
+          <span class="chip k">YT_REFRESH_TOKEN</span><span class="chip">privacy / category / tags</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--green)"></span>primary / free</span>
+    <span><span class="dot" style="background:var(--orange)"></span>fallback</span>
+    <span><span class="dot" style="background:var(--purple)"></span>key / optional</span>
+  </div>
+
+  <div class="note">
+    <b>Secrets (baad me add karna):</b> <code>GEMINI_API_KEY</code>, <code>STOCK_API_KEY</code> ("pixals"),
+    <code>HF_TOKEN</code>, <code>YT_CLIENT_ID</code>, <code>YT_CLIENT_SECRET</code>, <code>YT_REFRESH_TOKEN</code>.
+    Bina kisi key ke bhi pipeline chalti hai — Gemini ki jagah Pollinations free LLM, "pixals" ki jagah Pollinations image,
+    aur edge-tts narration. <b>GitHub Actions</b> rozana schedule pe automatically videos banata + upload karta hai.
+  </div>
+</div>
+</body>
+</html>

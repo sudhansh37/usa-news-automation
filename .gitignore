@@ -1,0 +1,19 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# runtime output
+output/
+work/
+*.mp4
+*.mp3
+*.wav
+*.jpg
+*.jpeg
+*.png
+!assets/**/*.png
+
+# keep history so the bot doesn't repeat news
+!data/seen.json
